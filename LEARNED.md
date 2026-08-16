@@ -136,4 +136,29 @@ Learn : By Using FastAPI type hint OpenAPI schema built itself. same idea will u
   - app is running
   - database is reachable
 
- 
+## 2026-08-16 — [M1] users + items schema + pehli migration
+Learnt : partial index only matching rows index  — scheduler speed get fast and free from 
+table size
+
+---
+
+**`Base.metadata` meaning:**
+- `Base.metadata` is SQLAlchemy’s **table register**
+- It stores info about all models/tables
+- Alembic uses it to compare:
+  - models
+  - actual database
+
+---
+
+- `Base` is created by us
+- `.metadata` is given by SQLAlchemy automatically
+
+---
+
+**Important problem:**
+- Importing only `Base` is sometimes **not enough**
+- Model classes like `User`, `Item` must also be imported somewhere
+- Otherwise `Base.metadata` may stay incomplete/empty
+
+  
