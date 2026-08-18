@@ -67,7 +67,7 @@ class Item(Base):
 
     nag_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    source: Mapped[str] = mapped_column(Integer, nullable=False, default="chat")
+    source: Mapped[str] = mapped_column(Text, nullable=False, default="chat")
 
 
     meta: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSONB),nullable=False, default=dict, server_default=text("'{}'::jsonb"),)

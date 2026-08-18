@@ -2,7 +2,7 @@
 
 Learn : By Using FastAPI type hint OpenAPI schema built itself. same idea will use in tool schemas later.
 
-## 2026-08-16 — [M1] Postgres + async SQLAlchemy session
+### Postgres + async SQLAlchemy session
 
 **Issues:**
 
@@ -136,8 +136,8 @@ Learn : By Using FastAPI type hint OpenAPI schema built itself. same idea will u
   - app is running
   - database is reachable
 
-## 2026-08-16 — [M1] users + items schema + pehli migration
-Learnt : partial index only matching rows index  — scheduler speed get fast and free from 
+### users + items schema + pehli migration
+Learned : partial index only matching rows index  — scheduler speed get fast and free from 
 table size
 
 ---
@@ -161,4 +161,52 @@ table size
 - Model classes like `User`, `Item` must also be imported somewhere
 - Otherwise `Base.metadata` may stay incomplete/empty
 
-  
+
+
+## 2026-08-18 — [M1] items CRUD, 4 endpoints
+**built:** the basic backend flow of a multi-user FastAPI app: **models → Alembic migrations → DB session → repository queries → routes → Pydantic request/response schemas**.  
+also learned the safety rule that **every item query must include `user_id`**, so each user only sees their own data.
+
+### FastAPI `response_model`
+
+- `response_model` tells FastAPI what shape the response should have.
+- It filters extra fields before sending data to the client.
+- It helps prevent accidental leaks of internal/sensitive fields.
+- It also validates returned data against the schema.
+- It improves `/docs` by showing response structure automatically.
+
+---
+
+### Pydantic `from_attributes=True`
+
+- `model_config = ConfigDict(from_attributes=True)` lets Pydantic read SQLAlchemy objects using attributes like `item.title`.
+- Without it, Pydantic expects mostly dict-like input.
+- This is Pydantic v2’s replacement for old `orm_mode = True`.
+
+---
+
+### `model_dump(exclude_unset=True)`
+
+- `model_dump()` converts a Pydantic model into a Python dict.
+- `exclude_unset=True` keeps only fields the client actually sent.
+- This is useful in PATCH/update so missing fields do not become `None`.
+- It prevents overwriting existing DB values by mistake.
+
+---
+
+### `setattr(item, key, value)`
+
+- `setattr()` sets an object attribute dynamically.
+- `setattr(item, "title", "new")` is like `item.title = "new"`.
+- It is useful in loops when updating many fields from a dict.
+
+---
+
+### FastAPI dependency error: `session` treated as query param
+
+- If a dependency function parameter is not wrapped in `Depends(...)`, FastAPI may treat it as request input.
+- `session: AsyncSession = Depends(get_db)` tells FastAPI to inject DB session.
+- Without that, FastAPI may ask for `session` in query params and raise validation error.
+
+---
+   
