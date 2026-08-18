@@ -7,6 +7,8 @@ from app.infra.db import get_db
 from app.infra.models import User
 from app.api.routes.items import router as items_router
 from app.api.routes.auth import router as auth_router
+from app.api.deps import get_current_user
+from app.api.schemas import UserRead
 
 app = FastAPI()
 
@@ -22,7 +24,7 @@ async def health(db: AsyncSession = Depends(get_db)):
 app.include_router(items_router)
 app.include_router(auth_router)
 
-# @app.get("/user")
-# async def get_user(db: AsyncSession = Depends(get_db)):
-#     return await  get_current_user(session=db)
+@app.get("/user", response_model=UserRead)
+async def get_user(token:str , db: AsyncSession = Depends(get_db)):
+    return await  get_current_user(token, session=db)
 

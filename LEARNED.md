@@ -220,3 +220,6 @@ also learned the safety rule that **every item query must include `user_id`**, s
 - Route `response_model` and actual returned data must match.
 - If `response_model=AuthResponse`, do not return `None`, `str`, or raw `User`.
 - On invalid login, raise `HTTPException(401)` instead of returning error strings.
+
+## 2026-08-19 — [M1] JWT token decoding in user retrieval and update user registration response model
+only need to change get_current_user no need to touch other items endpoints 

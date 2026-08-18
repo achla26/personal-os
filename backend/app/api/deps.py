@@ -6,10 +6,22 @@ from app.infra.config import settings
 from app.infra.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-async def get_current_user( session: AsyncSession = Depends(get_db),) -> User:
-    # TODO session 5: JWT 
+from app.infra.security import decode_access_token
+from app.api.schemas import UserRead
+
+async def get_current_user( token:str , session: AsyncSession = Depends(get_db)) -> UserRead:
+    
     try:
-        user_id = settings.DEV_USER_ID
+        decode_token = decode_access_token(token) 
+
+        if decode_token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Token invalid"
+            )
+
+        user_id = decode_token['sub']
+
     
         result = await session.execute(
             select(User).where(User.id == user_id)
