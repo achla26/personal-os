@@ -39,3 +39,24 @@ class ItemRead(BaseModel):
     completed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    email: str
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserRead
+
+class SigninInput(BaseModel):
+    email: str    
+    password: str
+
+class SignupInput(BaseModel):
+    name: str
+    email: str    
+    password: str    

@@ -210,3 +210,13 @@ also learned the safety rule that **every item query must include `user_id`**, s
 
 ---
    
+
+
+## 2026-08-19 — [M1] Login flow with hashed passwords
+
+- On login, do not hash the incoming password and query by that hash.
+- First fetch user by email only.
+- Then verify plain password using `verify_password(payload.password, user.password_hash)`.
+- Route `response_model` and actual returned data must match.
+- If `response_model=AuthResponse`, do not return `None`, `str`, or raw `User`.
+- On invalid login, raise `HTTPException(401)` instead of returning error strings.
