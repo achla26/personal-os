@@ -86,8 +86,13 @@ async def refresh_access_token(
     if old_refresh is None:
         raise UnauthorizedError("Invalid refresh token")
 
+    # REUSE DETECTION
     if old_refresh.revoked_at is not None:
-        raise UnauthorizedError("Refresh token revoked")
+       # already revoked - means sus activity
+        await refresh_repo.revoke_all_for_user(session, old_refresh.user_id)
+        await session.commit()
+        raise UnauthorizedError("Refresh token reuse detected. All sessions revoked.")
+       
 
     if old_refresh.expires_at <= datetime.now(timezone.utc):
         raise UnauthorizedError("Refresh token expired")
@@ -109,3 +114,18 @@ async def refresh_access_token(
         },
         new_cookie_value,
     )
+
+async def logout_user(
+    session: AsyncSession,
+    cookie_value: str
+) -> None:
+    try:
+        token_id_str, _ = cookie_value.split(".", 1)
+        token_id = UUID(token_id_str)
+    except (ValueError, AttributeError):
+        return  # Invalid cookie, just ignore
+
+    refresh = await refresh_repo.get_by_id(session, token_id)
+
+    if refresh is not None and refresh.revoked_at is None:
+        await refresh_repo.revoke(session, refresh)

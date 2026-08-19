@@ -4,7 +4,7 @@ from app.api.schemas import AuthResponse, SigninInput, SignupInput, UserRead
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infra.db import get_db
-from app.api.services.auth import create_user, issue_refresh_token, refresh_access_token, signin
+from app.api.services.auth import create_user, issue_refresh_token, logout_user, refresh_access_token, signin
 from app.infra.security import create_access_token
 from app.infra.core.errors import UnauthorizedError
 
@@ -49,10 +49,6 @@ async def register(
 ):
     return await create_user(session=db, payload=payload)
 
-@router.post("/logout")
-async def logout():
-    pass
-
 @router.post("/refresh")
 async def refresh(
     request: Request,
@@ -86,3 +82,19 @@ async def refresh(
 
     return access_data
 
+@router.post("/logout")
+async def logout(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    cookie_value = request.cookies.get("refresh_token")
+
+    if cookie_value:
+        await logout_user(session=db, cookie_value=cookie_value)
+        await db.commit()
+
+    # Cookie clear 
+    response.delete_cookie(key="refresh_token")
+
+    return {"message": "Logged out successfully"}

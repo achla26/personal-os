@@ -260,7 +260,5 @@ only need to change get_current_user no need to touch other items endpoints
 - **Custom JWT auth** using **Argon2** password hashing
 - **Refresh tokens** stored in DB with `httpOnly` cookies
 - **Refresh rotation** — when a refresh token is used, revoke the old one and issue a new one
-
-### Pending 
 - **Reuse detection** — if an already revoked refresh token is presented again, revoke all refresh tokens for that user (possible theft)
 - **`/auth/logout`** — revoke the current refresh token and clear the cookie
