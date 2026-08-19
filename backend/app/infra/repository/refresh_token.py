@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -26,3 +27,12 @@ async def get_by_id(
         select(RefreshToken).where(RefreshToken.id == token_id)
     )
     return result.scalar_one_or_none()
+
+
+
+async def revoke(
+    session: AsyncSession, 
+    token: RefreshToken
+) -> None:
+    token.revoked_at = datetime.now(timezone.utc)
+    await session.flush()

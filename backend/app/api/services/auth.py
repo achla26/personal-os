@@ -71,7 +71,7 @@ async def issue_refresh_token(
 async def refresh_access_token(
     session: AsyncSession,
     cookie_value: str,
-) -> dict:
+) -> tuple[dict, str]:
     # Parse cookie
     try:
         token_id_str, secret = cookie_value.split(".", 1)
@@ -81,23 +81,31 @@ async def refresh_access_token(
         raise UnauthorizedError("Invalid refresh token")
 
     # Get from DB
-    refresh = await refresh_repo.get_by_id(session, token_id)
+    old_refresh = await refresh_repo.get_by_id(session, token_id)
 
-    if refresh is None:
+    if old_refresh is None:
         raise UnauthorizedError("Invalid refresh token")
 
-    if refresh.revoked_at is not None:
+    if old_refresh.revoked_at is not None:
         raise UnauthorizedError("Refresh token revoked")
 
-    if refresh.expires_at <= datetime.now(timezone.utc):
+    if old_refresh.expires_at <= datetime.now(timezone.utc):
         raise UnauthorizedError("Refresh token expired")
 
-    if not verify_password(secret, refresh.token_hash):
+    if not verify_password(secret, old_refresh.token_hash):
         raise UnauthorizedError("Invalid refresh token")
 
-    access_token = create_access_token(user_id=str(refresh.user_id))
+    # ROTATION: revoke old + issue new
+    await refresh_repo.revoke(session, old_refresh)
+    new_cookie_value = await issue_refresh_token(session, old_refresh.user_id)
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+    # New access token
+    access_token = create_access_token(user_id=str(old_refresh.user_id))
+
+    return (
+        {
+            "access_token": access_token,
+            "token_type": "bearer",
+        },
+        new_cookie_value,
+    )

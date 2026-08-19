@@ -8,7 +8,6 @@ def validate_type(type: str) -> bool:
 
 
 def default_nag_policy(type: str) -> str:
-
     if type == "task":
         return "normal"
     elif type == "grocery":

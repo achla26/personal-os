@@ -56,12 +56,33 @@ async def logout():
 @router.post("/refresh")
 async def refresh(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
+    #  get refresh token from cookie 
     cookie_value = request.cookies.get("refresh_token")
 
+    #  validate
     if not cookie_value:
         raise UnauthorizedError("Missing refresh token")
 
-    return await refresh_access_token(session=db, cookie_value=cookie_value)
+    # revoke old refresh token, new refresh token  
+
+    access_data, new_cookie_value = await refresh_access_token(
+        session=db,
+        cookie_value=cookie_value,
+    )
+    await db.commit()  # rotation commit
+
+    # new cookie set 
+    response.set_cookie(
+        key="refresh_token",
+        value=new_cookie_value,
+        httponly=True,
+        secure=False,  # in prod True
+        samesite="lax",
+        max_age=60 * 60 * 24 * 30,
+    )
+
+    return access_data
 
