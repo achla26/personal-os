@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.db import get_db
  
-from app.infra.models import User
 from app.api.routes.items import router as items_router
 from app.api.routes.auth import router as auth_router
 from app.api.deps import get_current_user

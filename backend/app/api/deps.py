@@ -2,7 +2,6 @@ from fastapi import HTTPException, status, Depends
 from sqlalchemy import select
 
 from app.infra.models import User
-from app.infra.config import settings
 from app.infra.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 

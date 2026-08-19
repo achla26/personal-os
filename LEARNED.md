@@ -241,3 +241,9 @@ only need to change get_current_user no need to touch other items endpoints
 - Refresh token is often opaque (random string), not JWT, because DB control is easier.
 - Opaque token means the token itself has no readable meaning; server/DB knows the meaning.
 - Refresh token works more like a session key than a self-contained identity token.
+
+#### Pending
+
+- **Rotation:** when a refresh token is used, revoke the old one immediately and issue a new one.
+- **Reuse detection:** if an already revoked refresh token is used again, revoke all refresh tokens for that user.
+- **`/auth/logout`:** revoke the current refresh token and clear the refresh cookie.
