@@ -2,136 +2,98 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone 
 from uuid import UUID
-from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.models import Item, User, RefreshToken
+from app.infra.models import  User, RefreshToken
 from app.api.schemas import AuthResponse, SigninInput, SignupInput, UserRead
 from app.infra.security import create_access_token, hash_password, verify_password
 
-# READ ONE
-async def user_exist(session: AsyncSession, email: str) -> bool:
-    result = await session.execute(
-        select(User).where(User.email == email)
-    )
-    user =  result.scalar_one_or_none() 
+import app.infra.repository.user as user_repo
+import app.infra.repository.refresh_token as refresh_repo
 
-    if user is None:
-        return False
+from app.infra.core.errors import (
+    ConflictError,
+    UnauthorizedError,
+)
 
-    return True 
- 
 # CREATE
-async def create_user(session: AsyncSession, payload: SignupInput) -> UserRead:
+async def create_user(
+    session: AsyncSession,
+    payload: SignupInput,
+) -> User:
+    existing = await user_repo.get_by_email(session, payload.email)
 
-    
-    exist  = await user_exist(session, payload.email)
-    
+    if existing is not None:
+        raise ConflictError("Email already exists")
 
-    if exist:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email Already Exists",
-        )
-    
-    hased_password = hash_password(payload.password)
-
-    user = User( 
+    user = User(
         name=payload.name,
         email=payload.email,
-        password_hash=hased_password
+        password_hash=hash_password(payload.password),
     )
-    session.add(user)
+
+    user = await user_repo.create(session, user)
     await session.commit()
-    await session.refresh(user)
+    return user
+
+async def signin(session: AsyncSession, payload: SigninInput) -> UserRead:
+    user = await user_repo.get_by_email(session, payload.email)
+
+    if user is None:
+            raise UnauthorizedError("Invalid credentials")
+    
+    if not verify_password(payload.password, user.password_hash):
+        raise UnauthorizedError("Invalid credentials")
+
     return user
 
 
-async def signin(session: AsyncSession, payload: SigninInput) -> AuthResponse:
-
-    
-    result = await session.execute(
-        select(User).where(User.email == payload.email)
-    )
-    user = result.scalar_one_or_none()  
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-        )
-    
-    if not verify_password(payload.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-        )
-
-    access_token = create_access_token(user_id=str(user.id))
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user,
-    } 
-
-async def issue_refresh_token(session: AsyncSession, user_id: UUID) -> str:
+async def issue_refresh_token(
+    session: AsyncSession,
+    user_id: UUID,
+) -> str:
     token_id = uuid.uuid4()
     secret = secrets.token_urlsafe(32)
-
     cookie_value = f"{token_id}.{secret}"
 
     refresh = RefreshToken(
         id=token_id,
         user_id=user_id,
-        token_hash=hash_password(secret),    
+        token_hash=hash_password(secret),
         expires_at=datetime.now(timezone.utc) + timedelta(days=30),
     )
 
-    session.add(refresh)
-    await session.commit()
+    await refresh_repo.create(session, refresh)
+    # commit yahan nahi — route me hoga
 
     return cookie_value
 
-
-async def refresh_access_token(session: AsyncSession, cookie_value: str) -> dict:
+async def refresh_access_token(
+    session: AsyncSession,
+    cookie_value: str,
+) -> dict:
+    # Parse cookie
     try:
         token_id_str, secret = cookie_value.split(".", 1)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        )
+        token_id = UUID(token_id_str)
+        
+    except (ValueError, AttributeError):
+        raise UnauthorizedError("Invalid refresh token")
 
-    result = await session.execute(
-        select(RefreshToken).where(RefreshToken.id == UUID(token_id_str))
-    )
-    refresh = result.scalar_one_or_none()
+    # Get from DB
+    refresh = await refresh_repo.get_by_id(session, token_id)
 
     if refresh is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        )
+        raise UnauthorizedError("Invalid refresh token")
 
     if refresh.revoked_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token revoked",
-        )
+        raise UnauthorizedError("Refresh token revoked")
 
     if refresh.expires_at <= datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired",
-        )
+        raise UnauthorizedError("Refresh token expired")
 
     if not verify_password(secret, refresh.token_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        )
+        raise UnauthorizedError("Invalid refresh token")
 
     access_token = create_access_token(user_id=str(refresh.user_id))
 

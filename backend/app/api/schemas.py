@@ -40,23 +40,38 @@ class ItemRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class UserUpdate(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     name: str
     email: str
+    created_at: datetime
+    updated_at: datetime
+
 
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str
     user: UserRead
 
-class SigninInput(BaseModel):
-    email: str    
-    password: str
 
-class SignupInput(BaseModel):
-    name: str
-    email: str    
-    password: str    
+class SigninInput(BaseModel):
+    email: str = "ashlin@gmail.com"    
+    password: str = "password123"
+
+class SignupInput(UserCreate):
+    pass

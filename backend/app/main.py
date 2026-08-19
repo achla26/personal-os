@@ -8,9 +8,11 @@ from app.api.routes.items import router as items_router
 from app.api.routes.auth import router as auth_router
 from app.api.deps import get_current_user
 from app.api.schemas import UserRead
+from app.infra.core.error_handlers import register_exception_handlers
 
 app = FastAPI()
 
+register_exception_handlers(app)
 
 @app.get("/health")
 async def health(db: AsyncSession = Depends(get_db)): 
