@@ -7,8 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.security import decode_access_token
 from app.api.schemas import UserRead
+from fastapi.security import OAuth2PasswordBearer
 
-async def get_current_user( token:str , session: AsyncSession = Depends(get_db)) -> UserRead:
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+async def get_current_user( token: str = Depends(oauth2_scheme) , session: AsyncSession = Depends(get_db)) -> UserRead:
     
     try:
         decode_token = decode_access_token(token) 

@@ -262,3 +262,105 @@ only need to change get_current_user no need to touch other items endpoints
 - **Refresh rotation** — when a refresh token is used, revoke the old one and issue a new one
 - **Reuse detection** — if an already revoked refresh token is presented again, revoke all refresh tokens for that user (possible theft)
 - **`/auth/logout`** — revoke the current refresh token and clear the cookie
+
+
+## Testing Setup — Notes
+
+**Packages:**
+- `pytest` — test runner
+- `pytest-asyncio` — async test support
+- `httpx` — HTTP client for testing
+- `testcontainers[postgres]` — auto-managed PostgreSQL container
+
+**Config in `pyproject.toml`:**
+```toml
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+```
+
+---
+
+## Key Concepts
+
+- **ASGITransport** — httpx can test FastAPI app without running a real server (direct memory access, fast)
+- **testcontainers** — Docker container is automatically started/stopped for tests (real Postgres, no mocks)
+- **Dependency override** — In FastAPI, replace production `get_db` with test DB
+- **Fixtures** — pytest's reusable setup mechanism (`@pytest.fixture`)
+
+---
+
+## Fixtures Written (`conftest.py`)
+
+| Fixture | Scope | Purpose |
+|---|---|---|
+| `postgres_container` | session | Container starts once (all tests reuse it) |
+| `db_session` | function | Fresh DB session per test |
+| `client` | function | HTTP client with test DB injected |
+| `auth_client` | function | Client with valid JWT token (signed in) |
+
+**Rules:**
+- `session` scope = once per test run
+- `function` scope = new for each test
+- `yield` after setup, cleanup after `yield`
+
+---
+
+## Sync URL → Async URL
+
+`testcontainers` gives a sync URL. For async, replace it:
+```python
+async_url = sync_url.replace("postgresql+psycopg2", "postgresql+asyncpg")
+```
+
+---
+
+## Test Rules
+
+- **File name** must start with `test_`
+- **Function name** must start with `test_`
+- Helper functions should **NOT** have `test_` prefix
+- `async` helpers need `await` when called
+- Return a **tuple**, not a set: `return a, b` not `{a, b}`
+
+---
+
+## Test Structure (AAA)
+
+```python
+async def test_something(client):
+    # ARRANGE - setup data
+    # ACT - make API call
+    # ASSERT - verify result
+    assert response.status_code == 200
+```
+
+---
+
+## 5 Tests Written
+
+| Test | What it checks |
+|---|---|
+| `test_user_cannot_access_others_item` | **Tenancy** — User B cannot see User A's item (404) |
+| `test_create_item` | POST → 201, response has all fields |
+| `test_auth_required` | No token → 401 |
+| `test_mark_done` | PATCH `status=done` → `completed_at` filled, `next_nag_at=None` |
+| `test_login_wrong_password` | Wrong password AND unknown email → same 401 (prevents email enumeration) |
+
+---
+
+## Security Learnings
+
+- **404 vs 403** — return 404 for another user's item (403 leaks that the ID exists)
+- **Same error message** for wrong password AND unknown email (prevents email enumeration attack)
+- **Multi-tenancy** — every DB query must filter by `user_id`
+
+---
+## Debug Trick
+
+```bash
+uv run pytest -v -s
+```
+- `-v` = verbose output
+- `-s` = show print statements
+
+---

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infra.models.item import Item 
 from app.api.schemas import ItemCreate, ItemUpdate
 import app.infra.repository.item as items_repo
+from app.infra.core.errors import NotFoundError
 
 
 async def create_item(
@@ -34,7 +35,7 @@ async def update_item(
     item = await items_repo.get(session, user_id, item_id)
 
     if item is None:
-        raise Exception("Item not found")
+        raise NotFoundError("Item not found")
 
     data = payload.model_dump(exclude_unset=True)
 
@@ -71,7 +72,7 @@ async def get_item(
     item = await items_repo.get(session, user_id=user_id, item_id=item_id)
 
     if item is None:
-        raise Exception("Item not found")
+        raise NotFoundError("Item not found")
 
     return item
 
@@ -84,7 +85,7 @@ async def delete_item(
     item = await items_repo.get(session, user_id=user_id, item_id=item_id)
 
     if item is None:
-        raise Exception("Item not found")
+        raise NotFoundError("Item not found")
 
     await items_repo.delete(session, item)
     await session.commit()
