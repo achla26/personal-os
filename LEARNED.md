@@ -223,3 +223,21 @@ also learned the safety rule that **every item query must include `user_id`**, s
 
 ## 2026-08-19 — [M1] JWT token decoding in user retrieval and update user registration response model
 only need to change get_current_user no need to touch other items endpoints 
+
+## 2026-08-19 — [M1] Refresh token added
+
+- Access token is short-lived, so refresh token is used to get a new access token without logging in again.
+- Refresh token is stored in an `httpOnly` cookie so JavaScript cannot read it.
+- Refresh token should be long-lived, e.g. 30 days.
+- Refresh token is stored in DB so it can be checked, revoked, and rotated.
+- DB should store only the hashed refresh secret, not the plain token.
+- A practical refresh token format is `token_id.secret`.
+- `token_id` is used to find the DB row quickly.
+- `secret` is verified against the stored hash using `verify_password(...)`.
+- `/auth/refresh` reads the cookie, validates it, and returns a new access token.
+- If cookie is missing, revoked, expired, or invalid, return `401`.
+- Access token is usually returned in response body, not set as future auth automatically.
+- Login flow: create access token + create refresh token row + set refresh cookie.
+- Refresh token is often opaque (random string), not JWT, because DB control is easier.
+- Opaque token means the token itself has no readable meaning; server/DB knows the meaning.
+- Refresh token works more like a session key than a self-contained identity token.
