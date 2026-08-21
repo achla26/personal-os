@@ -364,3 +364,11 @@ uv run pytest -v -s
 - `-s` = show print statements
 
 ---
+
+## 2026-08-19 — [M1] AI Entry + Structured JSON output via Groq
+
+- Created clean `LLMProvider` Protocol boundary. No vendor lock-in; app doesn't know we use Groq.
+- Built `FakeProvider` for instant unit tests with 0 cost.
+- Handled Windows timezone lack issue by installing `tzdata` to resolve `zoneinfo` database.
+- Implemented New Zealand (Pacific/Auckland) timezone awareness in prompts. Relative dates like "tomorrow" resolve based on user's current clock, not UTC server clock.
+- Tuned Groq system prompts to strictly prevent JSON validation failure (`json_validate_failed` 400 error) caused by Qwen's thinking tags or leading whitespaces.
