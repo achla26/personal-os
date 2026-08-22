@@ -8,8 +8,7 @@ from zoneinfo import ZoneInfo
 
 from app.infra.llm import GroqProvider
 from app.domain.classification import ClassificationResult
-from app.api.agent.prompts import get_classification_prompt
-
+from app.api.agent.prompts import get_system_prompt  
 CASES_FILE = Path(__file__).parent / "cases.yaml"
 
 
@@ -65,12 +64,17 @@ async def run_single_case_with_backoff(provider, case, now):
     name = case["name"]
     input_text = case["input"]
     expect = case["expect"]
-    prompt = get_classification_prompt(input_text, now)
+    
+    system_prompt = get_system_prompt(now)
 
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            result = await provider.complete(prompt, ClassificationResult)
+            result = await provider.complete(
+                prompt=input_text,
+                schema=ClassificationResult,
+                system_prompt=system_prompt,
+            )
             ok, reasons = check_case(result, expect)
             return name, input_text, expect, ok, reasons
         except Exception as e:
@@ -119,7 +123,6 @@ async def test_classification_eval():
         else:
             failure_details.append((name, input_text, expect, reasons))
 
-    # ── PRINT RESULTS ──
     print("\n" + "=" * 60)
     print("  EVAL RESULTS")
     print("=" * 60)

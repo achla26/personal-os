@@ -2,10 +2,11 @@ from datetime import datetime
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.agent.prompts import get_system_prompt 
 from app.domain.classification import ClassificationResult
-from app.api.agent.prompts import get_classification_prompt
 from app.infra.llm import LLMProvider
-from app.infra.models import Item, Message   
+from app.infra.models import Item, Message
+
 
 async def handle_message(
     text: str,
@@ -27,24 +28,27 @@ async def handle_message(
     )
     session.add(user_msg)
 
-
-    # 2. LLM Classification call
-    prompt = get_classification_prompt(text, current_time)
-    result: ClassificationResult = await provider.complete(prompt, ClassificationResult)
+    # 2. LLM Classification call (System prompt + User prompt separaton)
+    system_prompt = get_system_prompt(current_time)
+    result: ClassificationResult = await provider.complete(
+        prompt=text,
+        schema=ClassificationResult,
+        system_prompt=system_prompt,
+    )
 
     # 3. Classified items convert into DB Items
     db_items = []
     for classified in result.items:
         db_item = Item(
             user_id=user_id,
-            item_type=classified.type, 
+            item_type=classified.type,
             title=classified.title,
-            body=classified.body,
-            due_at=classified.due_at,   
+            body=classified.body or "",
+            due_at=classified.due_at,
             nag_policy=classified.nag_policy,
             source="chat",
             status="open",
-            meta={"confidence": classified.confidence} 
+            meta={"confidence": classified.confidence},
         )
         db_items.append(db_item)
 

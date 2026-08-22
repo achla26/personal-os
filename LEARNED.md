@@ -387,3 +387,10 @@ uv run pytest -v -s
 - **Single Atomic Transaction:** Handled `Message` insertion and multi-item `Item` insertions in a single `await session.commit()`, ensuring no orphaned items if classification or DB write partially fails.
 - **Dependency Inversion in Tests:** Overrode `get_llm_provider` dependency with `FakeProvider` in FastAPI tests, executing full integration tests in milliseconds with zero API costs.
 - **Swagger Auth Fix:** Switched `OAuth2PasswordBearer` to `HTTPBearer` in `deps.py` for cleaner token pasting in Swagger UI.
+
+## 2026-08-22 — [M1] Session 10: Production LLM Infra & Integration Evals
+
+- **Smart Retry vs Blind Retry:** Implemented exponential backoff (`1s -> 2s -> 4s`) filtering by error types (`is_retryable_error`). Never retried 401/403 auth errors.
+- **Request Tracing via ContextVar:** Used Python `contextvars` (`request_id_ctx`) and FastAPI Middleware to attach a unique `X-Request-ID` to every HTTP request lifecycle without polluting function signatures.
+- **Structured LLM Logging:** Formatted LLM logs as key-value pairs containing `req_id`, `latency_ms`, `tokens_in`, `tokens_out`, and estimated `cost_est` per call for future log querying.
+- **Integration Evals:** Built `test_chat_eval.py` to test the entire `POST /chat` pipeline (Auth -> Context -> Domain -> LLM -> DB) achieving 90% score (18/20).
