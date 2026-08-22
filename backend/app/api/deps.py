@@ -7,14 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.security import decode_access_token
 from app.api.schemas import UserRead
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+from app.infra.llm import GroqProvider, LLMProvider
 
+security = HTTPBearer()
 
-async def get_current_user( token: str = Depends(oauth2_scheme) , session: AsyncSession = Depends(get_db)) -> UserRead:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), session: AsyncSession = Depends(get_db)) -> UserRead:
     
     try:
+        token = credentials.credentials 
         decode_token = decode_access_token(token) 
 
         if decode_token is None:
@@ -45,3 +47,8 @@ async def get_current_user( token: str = Depends(oauth2_scheme) , session: Async
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail=f"Auth error: {str(e)}"
         )
+
+
+def get_llm_provider() -> LLMProvider:
+    """Returns the production LLM provider."""
+    return GroqProvider()    

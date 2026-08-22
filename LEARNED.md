@@ -379,3 +379,11 @@ uv run pytest -v -s
 - **YAML Pitfall:** YAML parses `off` as boolean `False` unless quoted as `"off"`.
 - **Groq Rate Limits (429):** Batching 20 parallel requests to Groq free tier hits the 8000 TPM limit. Solved by executing sequentially with a 1.5s delay and writing a regex-based auto-backoff that parses the retry seconds from the 429 error message.
 - **Prompt Iteration Loop:** Iterated prompt from 60% -> 80% -> 90% score. Added strict rules for "done" states (returns empty array), note prefixes overriding verbs, and priority rule for groceries over "ASAP" triggers.
+
+## 2026-08-22 — [M1] Session 9: Orchestrating LLM with Postgres (`/chat`)
+
+- **Layered Orchestration:** Built `domain/inbox.py` (`handle_message`) as the central orchestrator. Kept LLM calls separate from HTTP routes and DB sessions.
+- **Eval Dataset Capture:** Every raw chat input is saved in the `messages` table before classification. This builds an organic eval dataset for future prompt tuning.
+- **Single Atomic Transaction:** Handled `Message` insertion and multi-item `Item` insertions in a single `await session.commit()`, ensuring no orphaned items if classification or DB write partially fails.
+- **Dependency Inversion in Tests:** Overrode `get_llm_provider` dependency with `FakeProvider` in FastAPI tests, executing full integration tests in milliseconds with zero API costs.
+- **Swagger Auth Fix:** Switched `OAuth2PasswordBearer` to `HTTPBearer` in `deps.py` for cleaner token pasting in Swagger UI.

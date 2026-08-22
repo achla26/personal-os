@@ -6,6 +6,8 @@ from app.infra.db import get_db
  
 from app.api.routes.items import router as items_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.chat import router as chat_router
+
 from app.api.deps import get_current_user
 from app.api.schemas import UserRead
 from app.infra.core.error_handlers import register_exception_handlers
@@ -24,6 +26,7 @@ async def health(db: AsyncSession = Depends(get_db)):
 
 app.include_router(items_router)
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 @app.get("/user", response_model=UserRead)
 async def get_user(token:str , db: AsyncSession = Depends(get_db)):

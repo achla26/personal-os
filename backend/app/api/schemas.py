@@ -75,3 +75,10 @@ class SigninInput(BaseModel):
 
 class SignupInput(UserCreate):
     pass
+
+
+class ChatRequest(BaseModel):
+    text: str
+
+class ChatResponse(BaseModel):
+    items: list[ItemRead]

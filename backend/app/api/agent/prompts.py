@@ -1,5 +1,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from app.infra.core.time import ensure_nz_tz
 
 
 def get_classification_prompt(text: str, current_time: datetime) -> str:
@@ -7,9 +8,8 @@ def get_classification_prompt(text: str, current_time: datetime) -> str:
     Takes raw user input and a reference timestamp,
     returns a formatted prompt for LLM classification.
     """
-    if current_time.tzinfo is None:
-        current_time = current_time.replace(tzinfo=ZoneInfo("Pacific/Auckland"))
 
+    current_time = ensure_nz_tz(current_time)
     time_str = current_time.strftime("%Y-%m-%d %H:%M %Z (%A)")
 
     return f"""You are an intelligent personal assistant. Your job is to parse messy, multi-intent user messages into structured items.

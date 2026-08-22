@@ -24,7 +24,7 @@ class Item(Base):
 
     title: Mapped[str] = mapped_column(String, nullable=False)
 
-    body: Mapped[str] = mapped_column(Text, nullable=False)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(String, nullable=False, default="open")
 
@@ -46,6 +46,11 @@ class Item(Base):
 
 
     meta: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSONB),nullable=False, default=dict, server_default=text("'{}'::jsonb"),)
+
+    due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
 
     created_at: Mapped[datetime|None] = mapped_column(
             DateTime(timezone=True),
