@@ -13,6 +13,7 @@ dependencies = [
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.13.0",
+    "pyyaml>=6.0.3",
     "sqlalchemy>=2.0.52",
     "tzdata>=2026.3",
     "uvicorn[standard]>=0.52.3",
@@ -28,3 +29,7 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "eval: LLM evaluation (costs money, runs real API)",
+]
+addopts = "-m 'not eval'"

@@ -1,12 +1,17 @@
 import json
 import os
 from typing import Protocol
-
+import asyncio 
 from groq import AsyncGroq
 from pydantic import BaseModel
 
 from app.domain.classification import ClassificationResult
 from app.infra.config import settings
+
+
+class ClassificationError(Exception):
+    """Raised when LLM classification completely fails after retries."""
+    pass
 
 # ──────────────────────────────────────────────
 # 1. INTERFACE 
@@ -27,38 +32,52 @@ class GroqProvider:
         self,
         api_key: str | None = None,
         model: str | None = None,
+        temperature: float = 0.1,
     ):
         self.client = AsyncGroq(
             api_key=api_key or settings.LLM_API_KEY,
         )
         self.model = model or settings.LLM_MODEL
+        self.temperature = temperature 
 
     async def complete(self, prompt: str, schema: type[BaseModel]) -> BaseModel:
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a strict JSON generator. "
-                        "You MUST output valid JSON only. "
-                        "Do not output thinking tags, explanations, or markdown. "
-                        "Your response must strictly start with '{' and end with '}'."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-        )
+        attempts = 2  # 1st try + 1 retry
+        last_error = None
 
-        raw_json = response.choices[0].message.content
+        for attempt in range(attempts):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a strict JSON generator. "
+                                "You MUST output valid JSON only. "
+                                "Do not output thinking tags, explanations, or markdown. "
+                                "Your response must strictly start with '{' and end with '}'."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=self.temperature,
+                )
 
-        if not raw_json:
-            raise ValueError("LLM returned empty response")
+                raw_json = response.choices[0].message.content
+                if not raw_json:
+                    raise ValueError("LLM returned empty response")
 
-        # Pydantic validates + parses in one step
-        return schema.model_validate_json(raw_json)
+                return schema.model_validate_json(raw_json)
+
+            except Exception as e:
+                last_error = e
+                if attempt < attempts - 1:
+                    # Chhota sa delay retry se pehle
+                    await asyncio.sleep(0.5)
+                continue
+
+        raise ClassificationError(f"Failed to parse LLM response after {attempts} attempts. Error: {last_error}")
 
 
 # ──────────────────────────────────────────────

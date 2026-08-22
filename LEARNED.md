@@ -372,3 +372,10 @@ uv run pytest -v -s
 - Handled Windows timezone lack issue by installing `tzdata` to resolve `zoneinfo` database.
 - Implemented New Zealand (Pacific/Auckland) timezone awareness in prompts. Relative dates like "tomorrow" resolve based on user's current clock, not UTC server clock.
 - Tuned Groq system prompts to strictly prevent JSON validation failure (`json_validate_failed` 400 error) caused by Qwen's thinking tags or leading whitespaces.
+
+## 2026-08-22 — [M1] Session 8: Eval Harness & 90% Accuracy
+
+- **Eval vs Test:** Learned that LLMs need fuzzy evals (scoring), not strict binary tests, because titles can vary.
+- **YAML Pitfall:** YAML parses `off` as boolean `False` unless quoted as `"off"`.
+- **Groq Rate Limits (429):** Batching 20 parallel requests to Groq free tier hits the 8000 TPM limit. Solved by executing sequentially with a 1.5s delay and writing a regex-based auto-backoff that parses the retry seconds from the 429 error message.
+- **Prompt Iteration Loop:** Iterated prompt from 60% -> 80% -> 90% score. Added strict rules for "done" states (returns empty array), note prefixes overriding verbs, and priority rule for groceries over "ASAP" triggers.

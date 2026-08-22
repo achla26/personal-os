@@ -1,0 +1,135 @@
+# ── SINGLE ITEM CASES ──
+
+- name: simple_task_with_day
+  input: "call dentist tuesday 4pm"
+  expect:
+    count: 1
+    type: task
+    nag_policy: normal
+    due_at: set
+
+- name: link_save
+  input: "https://youtu.be/xyz save this"
+  expect:
+    count: 1
+    type: link
+    nag_policy: "off"
+
+- name: expense_petrol
+  input: "spent 40 on petrol"
+  expect:
+    count: 1
+    type: expense
+    nag_policy: "off"
+
+- name: urgent_task
+  input: "urgent: submit visa form tomorrow"
+  expect:
+    count: 1
+    type: task
+    nag_policy: relentless
+    due_at: set
+
+- name: hinglish_date
+  input: "kal subah bank jaana hai"
+  expect:
+    count: 1
+    type: task
+    due_at: set
+
+- name: typo_task
+  input: "cal dentst tues"
+  expect:
+    count: 1
+    type: task
+
+- name: date_next_week
+  input: "agle hafte meeting hai"
+  expect:
+    count: 1
+    type: task
+    due_at: set
+
+- name: date_month_end
+  input: "month end tak report bhej do"
+  expect:
+    count: 1
+    type: task
+    due_at: set
+
+- name: link_with_comment
+  input: "https://example.com/article ye baad mein padhna"
+  expect:
+    count: 1
+    type: link
+    nag_policy: "off"
+
+- name: hindi_expense
+  input: "petrol pe 40 lage"
+  expect:
+    count: 1
+    type: expense
+    nag_policy: "off"
+
+- name: read_article
+  input: "ye article padhna hai AI agents in 2026"
+  expect:
+    count: 1
+    type: read
+    nag_policy: "off"
+
+- name: note_idea
+  input: "idea: app mein dark mode add karna"
+  expect:
+    count: 1
+    type: note
+    nag_policy: "off"
+
+- name: ambiguous_book
+  input: "atomic habits"
+  expect:
+    count: 1
+    type: read
+
+# ── MULTI ITEM CASES ──
+
+- name: multi_grocery
+  input: "milk, bread aur dahi"
+  expect:
+    count: 3
+    type: grocery
+    nag_policy: gentle
+
+- name: multi_item_mixed
+  input: "milk lena hai aur dentist ko call karna hai"
+  expect:
+    count: 2
+
+- name: long_paragraph
+  input: "yaar kal sham ko gym jaana hai aur haan wo Netflix ka link bhej dena https://netflix.com/show"
+  expect:
+    count: 2
+
+- name: multi_urgent_grocery
+  input: "ASAP pharmacy se paracetamol aur cough syrup lana"
+  expect:
+    count: 2
+    type: grocery
+    nag_policy: gentle
+
+# ── ZERO ITEM CASES (sabse important!) ──
+
+- name: count_zero_hello
+  input: "hello"
+  expect:
+    count: 0
+
+- name: count_zero_thanks
+  input: "thanks for the info"
+  expect:
+    count: 0
+
+- name: negative_done
+  input: "dentist wala kaam ho gaya"
+  expect:
+    count: 0
