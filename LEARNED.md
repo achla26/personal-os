@@ -394,3 +394,12 @@ uv run pytest -v -s
 - **Request Tracing via ContextVar:** Used Python `contextvars` (`request_id_ctx`) and FastAPI Middleware to attach a unique `X-Request-ID` to every HTTP request lifecycle without polluting function signatures.
 - **Structured LLM Logging:** Formatted LLM logs as key-value pairs containing `req_id`, `latency_ms`, `tokens_in`, `tokens_out`, and estimated `cost_est` per call for future log querying.
 - **Integration Evals:** Built `test_chat_eval.py` to test the entire `POST /chat` pipeline (Auth -> Context -> Domain -> LLM -> DB) achieving 90% score (18/20).
+
+## 2026-08-28 — [M1] Frontend Auth, Next.js Setup & Secure Token Architecture
+
+- **Token Architecture (XSS Safe):** Refresh token stored in `HttpOnly`, `SameSite`, `Secure` cookie (immune to JavaScript/XSS). Access token stored exclusively in React memory (`let accessToken: string | null`), never in `localStorage`.
+- **Silent Refresh & Locking:** Built `apiFetch` seam with single-flight locking (`refreshPromise`). If multiple API calls fail simultaneously with `401`, they share a single `/auth/refresh` call rather than hammering the backend.
+- **Automatic Request Retrying:** Seamlessly catches 401s, silently fetches a new access token, reattaches `Authorization: Bearer <token>`, and replays the original failed request.
+- **Tailwind v4 Theming:** Configured CSS-first design tokens (`@theme`) directly in `globals.css` with semantic color palettes (`surface-0/1/2/3`, `border-subtle`, `type-*`).
+- **Client Auth Context:** Implemented `AuthContext` to run silent token checks on initial page load, preventing unwanted logouts during full page refreshes.
+- **Defensive Layout:** Frontend checks act strictly as side-effect UX routing; true authorization remains strictly enforced on the backend at the endpoint level (defense against Next.js middleware bypass CVE-2025-29927).

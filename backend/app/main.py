@@ -13,9 +13,19 @@ from app.api.schemas import UserRead
 from app.infra.core.error_handlers import register_exception_handlers
 from app.infra.core.context import set_request_id
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
 register_exception_handlers(app)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,       #  for cookies
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
