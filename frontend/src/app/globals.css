@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces (Dark mode layers) */
+  --color-surface-0: #0b0c0e; /* Background deep */
+  --color-surface-1: #131519; /* Card background */
+  --color-surface-2: #1c1f26; /* Hover / Input field background */
+  --color-surface-3: #282c37; /* Active / elevated */
+
+  /* Borders */
+  --color-border-subtle: #232730;
+  --color-border-strong: #363c4a;
+
+  /* Text */
+  --color-content-primary: #f3f4f6;   /* 90% white */
+  --color-content-secondary: #9ca3af; /* muted text */
+  --color-content-tertiary: #6b7280;  /* placeholder / timestamp */
+
+  /* 6 Core item types (Personal OS palette) */
+  --color-type-task: #f97316;    /* Orange */
+  --color-type-grocery: #22c55e; /* Green */
+  --color-type-link: #3b82f6;    /* Blue */
+  --color-type-read: #ec4899;    /* Pink */
+  --color-type-expense: #eab308; /* Yellow */
+  --color-type-note: #a855f7;    /* Purple */
+
+  /* Action / Status */
+  --color-brand: #3b82f6;
+  --color-danger: #ef4444;
+}
+
+body {
+  background-color: var(--color-surface-0);
+  color: var(--color-content-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
