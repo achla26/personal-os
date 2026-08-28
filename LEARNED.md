@@ -403,3 +403,10 @@ uv run pytest -v -s
 - **Tailwind v4 Theming:** Configured CSS-first design tokens (`@theme`) directly in `globals.css` with semantic color palettes (`surface-0/1/2/3`, `border-subtle`, `type-*`).
 - **Client Auth Context:** Implemented `AuthContext` to run silent token checks on initial page load, preventing unwanted logouts during full page refreshes.
 - **Defensive Layout:** Frontend checks act strictly as side-effect UX routing; true authorization remains strictly enforced on the backend at the endpoint level (defense against Next.js middleware bypass CVE-2025-29927).
+
+## 2026-08-23 — [M1] Chat UI, Optimistic Updates & Item Cards
+
+- **Optimistic UI Pattern:** Rendered user message and assistant placeholder instantly before backend `/chat` completed, achieving near-zero perceived latency.
+- **Dynamic Tailwind Class Safety:** Learned that dynamic template strings (`bg-${color}`) get purged by Tailwind's static analyzer. Resolved by mapping static utility class strings (`bg-orange-500/15`, `text-orange-400`) directly.
+- **Single Component Architecture:** Built a single, data-driven `<ItemCard>` component driven by type maps, avoiding redundant multi-component creation for 6 item types.
+- **Optimistic State Mutating:** Handled `PATCH /items/{id}` status changes dynamically with rollback fallback if network error occurs.
