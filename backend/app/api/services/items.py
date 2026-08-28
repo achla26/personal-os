@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone 
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +54,8 @@ async def list_items(
     item_type: str | None = None,
     status: str | None = None,
     limit: int = 50,
+    x_timezone: str| None  = None, 
+    group: str | None = None,
 ) -> list[Item]:
     return await items_repo.list(
         session,
@@ -61,6 +63,8 @@ async def list_items(
         item_type=item_type,
         status=status,
         limit=limit,
+        x_timezone=x_timezone,
+        group=group
     )
 
 

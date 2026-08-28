@@ -410,3 +410,13 @@ uv run pytest -v -s
 - **Dynamic Tailwind Class Safety:** Learned that dynamic template strings (`bg-${color}`) get purged by Tailwind's static analyzer. Resolved by mapping static utility class strings (`bg-orange-500/15`, `text-orange-400`) directly.
 - **Single Component Architecture:** Built a single, data-driven `<ItemCard>` component driven by type maps, avoiding redundant multi-component creation for 6 item types.
 - **Optimistic State Mutating:** Handled `PATCH /items/{id}` status changes dynamically with rollback fallback if network error occurs.
+
+## 2026-08-23 — 🎉 M1 COMPLETE: Capture Loop
+
+13 sessions. Built: auth (JWT + HttpOnly refresh), items CRUD, tenancy,
+LLM classification + evals, chat endpoint, Next.js PWA, Chat/Now/Library tabs,
+timezone-aware Now grouping, optimistic UI, XSS-safe token architecture.
+
+**Mobile:** LAN bind (`0.0.0.0`), dynamic API host, CORS + allowedDevOrigins,
+PWA manifest, Add to Home Screen.
+ 

@@ -3,8 +3,8 @@
 interface Item {
   id: number;
   title: string;
-  type: string;
-  due_date?: string | null;
+  item_type: string;
+  due_at?: string | null;
   status: string;
   nag_policy?: string | null;
 }
@@ -58,7 +58,7 @@ const TYPE_CONFIG: Record<
 
 export default function ItemCard({ item, onDone }: ItemCardProps) {
   // Case-insensitive lookup (fixes all items defaulting to NOTE)
-  const normalizedType = (item.type || "note").toLowerCase();
+  const normalizedType = (item.item_type || "note").toLowerCase();
   const config = TYPE_CONFIG[normalizedType] || TYPE_CONFIG.note;
   const isDone = item.status === "done";
 
@@ -116,9 +116,9 @@ export default function ItemCard({ item, onDone }: ItemCardProps) {
             {config.label}
           </span>
 
-          {item.due_date && (
+          {item.due_at && (
             <span className="text-[11px] text-content-tertiary">
-              📅 {new Date(item.due_date).toLocaleDateString()}
+              📅 {new Date(item.due_at).toLocaleDateString()}
             </span>
           )}
 

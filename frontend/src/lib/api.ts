@@ -62,6 +62,7 @@ export async function apiFetch<T = any>(
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
+  headers.set("X-Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   // 2. Attach access token from memory if present
   if (accessToken) {

@@ -2,12 +2,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 # default timezone (New Zealand)
-NZ_TIMEZONE = ZoneInfo("Pacific/Auckland")
+CURRENT_TIMEZONE = ZoneInfo("Pacific/Auckland")
 
 
 def now_nz() -> datetime:
     """Returns current datetime in New Zealand timezone (timezone-aware)."""
-    return datetime.now(NZ_TIMEZONE)
+    return datetime.now(CURRENT_TIMEZONE)
 
 
 def ensure_nz_tz(dt: datetime) -> datetime:
@@ -16,5 +16,10 @@ def ensure_nz_tz(dt: datetime) -> datetime:
     it assign NZ timezone.
     """
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=NZ_TIMEZONE)
-    return dt.astimezone(NZ_TIMEZONE)
+        return dt.replace(tzinfo=CURRENT_TIMEZONE)
+    return dt.astimezone(CURRENT_TIMEZONE)
+
+
+def now_local_tz(tz) -> datetime:
+    """Returns current datetime in given timezone (timezone-aware)."""
+    return datetime.now(tz)

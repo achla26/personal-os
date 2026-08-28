@@ -6,10 +6,15 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import ChatTimeline, { ChatMessage } from "@/components/ChatTimeline";
 import ChatComposer from "@/components/ChatComposer";
+import NowTab from "@/components/NowTab";
+import LibraryTab from "@/components/LibraryTab";
 
 export default function ChatScreen() {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
+  
+  const [activeTab, setActiveTab] = useState<"chat" | "now" | "library">("chat"); // NEW STATE
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -144,41 +149,63 @@ export default function ChatScreen() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface-0">
+    <main className="flex min-h-screen items-center justify-center bg-[#07080a]">
       {/* Mobile Shell Wrapper */}
-      <div className="flex h-screen w-full max-w-md flex-col border-x border-border-subtle bg-surface-0 shadow-2xl">
+      <div className="flex h-screen w-full max-w-md flex-col border-x border-border-subtle bg-surface-0 shadow-2xl relative">
+        
         {/* Header */}
-        <header className="flex h-14 items-center justify-between border-b border-border-subtle bg-surface-1 px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border-subtle bg-surface-1 px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-xs font-bold text-white">
-              ❇
-            </div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-xs font-bold text-white">❇</div>
             <div>
               <h1 className="text-xs font-bold text-content-primary">Personal OS</h1>
               <p className="text-[10px] text-emerald-400">● active</p>
             </div>
           </div>
-
-          <button
-            onClick={logout}
-            className="rounded-md bg-surface-2 px-2.5 py-1 text-xs font-medium text-content-secondary hover:text-content-primary"
-          >
-            Logout
-          </button>
+          <button onClick={logout} className="text-xs font-medium text-content-secondary hover:text-content-primary">Logout</button>
         </header>
 
-        {/* Main chat timeline */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <ChatTimeline
-            messages={messages}
-            onDoneItem={handleDoneItem}
-            onRetry={handleRetry}
-          />
-          <div ref={scrollRef} />
+        {/* Dynamic View based on Tab */}
+        <div className="flex flex-1 flex-col overflow-hidden pb-16">
+          {activeTab === "chat" && (
+            <>
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <ChatTimeline messages={messages} onDoneItem={handleDoneItem} onRetry={handleRetry} />
+                <div ref={scrollRef} />
+              </div>
+              <ChatComposer onSend={handleSendMessage} disabled={isSending} />
+            </>
+          )}
+
+          {activeTab === "now" && <NowTab onDoneItem={handleDoneItem} />}
+          
+          {activeTab === "library" && <LibraryTab onDoneItem={handleDoneItem} />}
         </div>
 
-        {/* Input Composer */}
-        <ChatComposer onSend={handleSendMessage} disabled={isSending} />
+        {/* BOTTOM NAVIGATION BAR */}
+        <nav className="absolute bottom-0 left-0 right-0 flex h-16 items-center justify-around border-t border-border-subtle bg-surface-1/90 px-4 backdrop-blur-md">
+          <button
+            onClick={() => setActiveTab("now")}
+            className={`flex flex-col items-center gap-1 text-xs font-bold transition ${activeTab === "now" ? "text-brand" : "text-content-tertiary"}`}
+          >
+            <span className="text-lg">⏱</span> Now
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition -translate-y-4 ${activeTab === "chat" ? "bg-brand text-white" : "bg-surface-2 text-content-secondary"}`}
+          >
+            ✦
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("library")}
+            className={`flex flex-col items-center gap-1 text-xs font-bold transition ${activeTab === "library" ? "text-brand" : "text-content-tertiary"}`}
+          >
+            <span className="text-lg">📚</span> Library
+          </button>
+        </nav>
+
       </div>
     </main>
   );

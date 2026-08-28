@@ -21,7 +21,7 @@ register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000","http://192.168.68.51:3000"],
     allow_credentials=True,       #  for cookies
     allow_methods=["*"],
     allow_headers=["*"],

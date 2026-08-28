@@ -82,3 +82,9 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     items: list[ItemRead]
+
+class GroupedItems(BaseModel):
+    overdue: list[ItemRead]
+    today: list[ItemRead]
+    this_week: list[ItemRead]
+    someday: list[ItemRead]

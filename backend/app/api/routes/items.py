@@ -1,10 +1,10 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.db import get_db
 from app.api.deps import get_current_user
-from app.api.schemas import ItemCreate, ItemUpdate, ItemRead
+from app.api.schemas import ItemCreate, ItemUpdate, ItemRead, GroupedItems
 from app.infra.models import User
 
 from app.api.services.items import (
@@ -26,6 +26,7 @@ async def fetch_all_items(
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    x_timezone: str = Header("UTC"),
 ):
     return await list_items(
         session=db,
@@ -33,7 +34,29 @@ async def fetch_all_items(
         item_type=item_type,
         status=status,
         limit=limit,
+        x_timezone=x_timezone,
     )
+
+
+@router.get("/grouped", response_model=GroupedItems)
+async def fetch_grouped_items(
+    item_type: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    x_timezone: str = Header("UTC"),
+):
+    items = await list_items(
+        session=db,
+        user_id=current_user.id,
+        item_type=item_type,
+        status=status,
+        limit=limit,
+        x_timezone=x_timezone,
+        group="now",
+    )
+    return items
 
 
 # GET ONE
