@@ -9,7 +9,14 @@ from app.infra.llm import ClassificationError, LLMProvider
 from app.infra.models import User
 from app.api.schemas import ChatResponse,ChatRequest
 
+from app.domain.agent.loop import run_agent
+from app.domain.agent.tools import ToolContext
+
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+class ChatIn(BaseModel):
+    message: str
 
 
 @router.post("", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
@@ -46,3 +53,20 @@ async def chat_message(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI Classification service failed: {str(e)}",
         )
+
+
+
+@router.post("/agent")
+async def chat_agent(
+    payload: ChatIn, 
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+    llm=Depends(get_llm_provider),
+):
+    ctx = ToolContext(user_id=user.id, db=db)
+    result = await run_agent(user_text=payload.message, ctx=ctx, llm=llm)
+    return {
+        "reply": result["text"],
+        "trace": result["trace"],  # optional: hide in prod later
+        "stopped_reason": result["stopped_reason"],
+    }    

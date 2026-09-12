@@ -1,73 +1,143 @@
 import pytest
-from httpx import AsyncClient
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_llm_provider
-from app.domain.classification import ClassificationResult
-from app.infra.llm import FakeProvider
-from app.infra.models import Item, Message
-from app.main import app 
+from app.domain.agent.loop import run_agent, MAX_ITERATIONS
+from app.domain.agent.tools import ToolContext
+from app.infra.llm import FakeAgentProvider
+from app.infra.models import Item, User
+from app.infra.security import hash_password
+
+
+async def _make_user(db_session: AsyncSession) -> User:
+    user = User(
+        name="Agent Test",
+        email=f"agent-{id(db_session)}@example.com",
+        password_hash=hash_password("password123"),
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+async def _make_dentist_item(db_session: AsyncSession, user_id: str) -> Item:
+    item = Item(
+        user_id=user_id,
+        title="Call dentist",
+        item_type="task",
+        status="open",
+        body="",
+        nag_policy="normal",
+    )
+    db_session.add(item)
+    await db_session.commit()
+    await db_session.refresh(item)
+    return item
+
 
 @pytest.mark.asyncio
-async def test_chat_creates_message_and_items(
-    auth_client: AsyncClient,
-    db_session: AsyncSession,
-):
-    # 1. Arrange: Fake response setup 
-    fake_result = ClassificationResult.model_validate({
-        "items": [
-            {
-                "type": "grocery",
-                "title": "Milk",
-                "body": None,
-                "due_at": None,
-                "nag_policy": "gentle",
-                "confidence": 0.98,
-            },
-            {
-                "type": "task",
-                "title": "Call dentist",
-                "body": None,
-                "due_at": None,
-                "nag_policy": "normal",
-                "confidence": 0.95,
-            },
-        ]
-    })
-    fake_provider = FakeProvider(fixed_response=fake_result)
+async def test_complete_dentist_flow(db_session: AsyncSession):
+    user = await _make_user(db_session)
+    dentist = await _make_dentist_item(db_session, str(user.id))
 
-    # Dependency Override:  Groq swap into FakeProvider 
-    app.dependency_overrides[get_llm_provider] = lambda: fake_provider
+    script = [
+        {
+            "text": None,
+            "tool_calls": [
+                {
+                    "id": "1",
+                    "type": "function",
+                    "function": {
+                        "name": "search_items",
+                        "arguments": '{"query": "dentist", "status": "open"}',
+                    },
+                }
+            ],
+        },
+        {
+            "text": None,
+            "tool_calls": [
+                {
+                    "id": "2",
+                    "type": "function",
+                    "function": {
+                        "name": "complete_item",
+                        "arguments": f'{{"item_id": "{dentist.id}"}}',
+                    },
+                }
+            ],
+        },
+        {"text": "Dentist wala kaam done mark kar diya.", "tool_calls": []},
+    ]
 
-    try:
-        # 2. Act: POST /chat call 
-        payload = {"text": "milk and call dentist "}
-        response = await auth_client.post("/chat", json=payload)
+    llm = FakeAgentProvider(script)
+    ctx = ToolContext(user_id=str(user.id), db=db_session)
+    out = await run_agent(
+        user_text="dentist wala kaam ho gaya",
+        ctx=ctx,
+        llm=llm,
+    )
 
-        # 3. Assert: API Response verify karo
-        assert response.status_code == 201
-        data = response.json()
-        assert len(data["items"]) == 2
-        assert data["items"][0]["title"] == "Milk"
-        assert data["items"][1]["title"] == "Call dentist"
+    assert out["stopped_reason"] == "final"
+    assert any(t["tool"] == "complete_item" for t in out["trace"])
 
-        # 4. Assert: In Database Message and Items check 
-        # Check Message table
-        msg_result = await db_session.execute(
-            select(Message).where(Message.content == payload["text"])
-        )
-        saved_msg = msg_result.scalar_one_or_none()
-        assert saved_msg is not None
-        assert saved_msg.role == "user"
+    await db_session.refresh(dentist)
+    assert dentist.status == "done"
+    assert dentist.completed_at is not None
 
-        # Check Item table
-        items_result = await db_session.execute(
-            select(Item).where(Item.title.in_(["Milk", "Call dentist"]))
-        )
-        saved_items = items_result.scalars().all()
-        assert len(saved_items) == 2
 
-    finally:
-        # Cleanup overrides
-        app.dependency_overrides.pop(get_llm_provider, None)
+@pytest.mark.asyncio
+async def test_max_iterations_stops(db_session: AsyncSession):
+    user = await _make_user(db_session)
+
+    infinite = [
+        {
+            "text": None,
+            "tool_calls": [
+                {
+                    "id": str(i),
+                    "type": "function",
+                    "function": {
+                        "name": "search_items",
+                        "arguments": '{"query": "x"}',
+                    },
+                }
+            ],
+        }
+        for i in range(MAX_ITERATIONS + 5)
+    ]
+
+    llm = FakeAgentProvider(infinite)
+    ctx = ToolContext(user_id=str(user.id), db=db_session)
+    out = await run_agent(user_text="loop", ctx=ctx, llm=llm)
+
+    assert out["stopped_reason"] == "max_iterations"
+
+
+@pytest.mark.asyncio
+async def test_tool_error_is_data_not_crash(db_session: AsyncSession):
+    user = await _make_user(db_session)
+
+    script = [
+        {
+            "text": None,
+            "tool_calls": [
+                {
+                    "id": "1",
+                    "type": "function",
+                    "function": {
+                        "name": "complete_item",
+                        "arguments": '{"item_id": "01impossible0000000000000000"}',
+                    },
+                }
+            ],
+        },
+        {"text": "Woh item nahi mili.", "tool_calls": []},
+    ]
+
+    llm = FakeAgentProvider(script)
+    ctx = ToolContext(user_id=str(user.id), db=db_session)
+    out = await run_agent(user_text="complete missing", ctx=ctx, llm=llm)
+
+    assert out["stopped_reason"] == "final"
+    assert "error" in out["trace"][0]["result"]

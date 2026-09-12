@@ -6,6 +6,7 @@ from testcontainers.postgres import PostgresContainer
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.infra.models import Base
 from app.infra.db import get_db
+from app.infra.models.user import User
 
 @pytest.fixture(scope="session")
 def postgres_container():
@@ -89,3 +90,16 @@ async def auth_client(client):
     client.headers["Authorization"] = f"Bearer {access_token}"
     
     yield client
+
+@pytest.fixture
+async def test_user(db_session):
+    """Reusable test user fixture for all tests."""
+    user = User(
+        name="Test User",
+        email=f"test-user-{id(db_session)}@example.com",
+        password_hash="not-used-in-tests",
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user    

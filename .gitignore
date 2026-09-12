@@ -11,3 +11,4 @@ wheels/
 .env
 *.pyc
 docs/
+0data
